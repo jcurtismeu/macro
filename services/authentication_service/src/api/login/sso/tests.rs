@@ -53,6 +53,60 @@ fn untrusted_original_urls_are_rejected() {
 }
 
 #[test]
+fn machine_names_are_accepted_in_develop_only() {
+    let machine_url =
+        Url::parse("https://some-machine.local:3000/app/login").expect("test URL should parse");
+    assert!(is_allowed_original_url_in(
+        macro_env::Environment::Develop,
+        &machine_url
+    ));
+    assert!(!is_allowed_original_url_in(
+        macro_env::Environment::Production,
+        &machine_url
+    ));
+
+    let untrusted_url = Url::parse("https://example.com/app/login").expect("test URL should parse");
+    assert!(!is_allowed_original_url_in(
+        macro_env::Environment::Develop,
+        &untrusted_url
+    ));
+
+    let deployed_url =
+        Url::parse("https://dev.macro.com/app/login").expect("test URL should parse");
+    assert!(is_allowed_original_url_in(
+        macro_env::Environment::Develop,
+        &deployed_url
+    ));
+}
+
+#[test]
+fn development_machine_urls_are_https_mdns_names_without_credentials() {
+    for accepted in [
+        "https://some-machine.local:3000/app/login",
+        "https://some-machine.local/app/",
+        "https://Some-Machine.LOCAL:3000/app/login?next=1#section",
+    ] {
+        let url = Url::parse(accepted).expect("test URL should parse");
+        assert!(is_development_machine_url(&url), "{url}");
+    }
+
+    for rejected in [
+        "http://some-machine.local:3000/app/login",
+        "https://user:password@some-machine.local:3000/app/login",
+        "https://user@some-machine.local:3000/app/login",
+        "https://some-machine.local.example.com/app/login",
+        "https://some-machinelocal/app/login",
+        "https://local/app/login",
+        "https://example.com/app/login",
+        "https://192.168.1.20:3000/app/login",
+        "macro://some-machine.local/app/login",
+    ] {
+        let url = Url::parse(rejected).expect("test URL should parse");
+        assert!(!is_development_machine_url(&url), "{url}");
+    }
+}
+
+#[test]
 fn microsoft_sign_in_asks_for_the_account_picker() {
     assert_eq!(sign_in_prompt("microsoft"), Some("select_account"));
     assert_eq!(sign_in_prompt("google"), None);

@@ -50,11 +50,31 @@ pub(crate) struct LoginQueryParams {
 }
 
 pub(crate) fn is_allowed_original_url(url: &Url) -> bool {
-    let local_origin = match macro_env::Environment::new_or_prod() {
+    is_allowed_original_url_in(macro_env::Environment::new_or_prod(), url)
+}
+
+fn is_allowed_original_url_in(environment: macro_env::Environment, url: &Url) -> bool {
+    let local_origin = match environment {
         macro_env::Environment::Local => Some(crate::api::utils::default_redirect_url()),
-        _ => None,
+        macro_env::Environment::Develop if is_development_machine_url(url) => return true,
+        macro_env::Environment::Develop | macro_env::Environment::Production => None,
     };
     is_allowed_original_url_with_local_origin(url, local_origin.as_ref())
+}
+
+/// Whether `url` is a frontend served from a developer's machine under its
+/// mDNS name, such as `https://some-machine.local:3000`.
+///
+/// Standalone Vite serves the app on that name against the hosted Develop
+/// services. `.local` names cannot be registered publicly and no public
+/// certificate authority issues for them, but whoever answers name lookups on
+/// the visitor's network can claim one, so only Develop accepts them;
+/// Production never does.
+fn is_development_machine_url(url: &Url) -> bool {
+    let is_mdns_host =
+        matches!(url.host(), Some(url::Host::Domain(host)) if host.ends_with(".local"));
+
+    url.scheme() == "https" && url.username().is_empty() && url.password().is_none() && is_mdns_host
 }
 
 fn is_allowed_original_url_with_local_origin(url: &Url, local_origin: Option<&Url>) -> bool {

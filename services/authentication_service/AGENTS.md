@@ -337,6 +337,12 @@ inputs cannot select an agent, and ordinary user credentials remain unattributed
   refuses any sign-in whose verified id_token lacks `xms_edov: true` (the
   email's domain verified by Microsoft), so FusionAuth creates or links no
   user on an unverified address.
+- `is_allowed_original_url` (`src/api/login/sso.rs`) is the one return-URL
+  allowlist for sign-in and account-link flows. Develop also accepts any HTTPS
+  `.local` machine name, for standalone Vite on a developer's hostname;
+  Production never does. A session code is sent to that URL, and a network
+  that answers `.local` lookups can claim such a name, so keep this out of
+  Production and do not widen it to names that resolve publicly.
 - A session code (`/session/login/{session_code}`, the native and dev-proxy
   SSO handoff) redeems once: `take_mobile_login_session` reads and deletes it
   in one Redis script, so concurrent redemptions yield one success. A failed

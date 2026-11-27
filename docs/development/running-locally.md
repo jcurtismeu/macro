@@ -91,8 +91,9 @@ requests through `/__macro_dev/` on this same origin, so arbitrary machine
 hostnames do not need to be added to the deployed CORS allowlist. Authentication
 cookies are scoped to the visiting hostname; sign in with an email code on that
 hostname rather than relying on an existing `.macro.com` cookie. Google/SSO
-redirects still use the hosted authentication service’s redirect allowlist, which
-does not currently include arbitrary development hostnames.
+redirects use the hosted authentication service’s redirect allowlist: it accepts
+`https://localhost` and, in Develop only, an HTTPS `.local` machine name (the
+default macOS `hostname`). Other development hostnames are not on it.
 
 Use `MACRO_DEV_HTTPS=false bun run dev` for an HTTP-only workflow. Tauri and the
 local stack's internal Vite server keep using HTTP automatically; the stack
