@@ -43,8 +43,6 @@ fn untrusted_original_urls_are_rejected() {
         "tauri://example.com/app/login",
         "http://127.0.0.1:3000/app/login",
         "javascript:alert('redirected')",
-        // Machine names are accepted in Develop only; tests run as Production.
-        "https://some-machine.local:3000/app/login",
     ] {
         let original_url = Url::parse(original_url).expect("test URL should parse");
         assert!(
@@ -55,13 +53,40 @@ fn untrusted_original_urls_are_rejected() {
 }
 
 #[test]
+fn machine_names_are_accepted_in_develop_only() {
+    let machine_url =
+        Url::parse("https://some-machine.local:3000/app/login").expect("test URL should parse");
+    assert!(is_allowed_original_url_in(
+        macro_env::Environment::Develop,
+        &machine_url
+    ));
+    assert!(!is_allowed_original_url_in(
+        macro_env::Environment::Production,
+        &machine_url
+    ));
+
+    let untrusted_url = Url::parse("https://example.com/app/login").expect("test URL should parse");
+    assert!(!is_allowed_original_url_in(
+        macro_env::Environment::Develop,
+        &untrusted_url
+    ));
+
+    let deployed_url =
+        Url::parse("https://dev.macro.com/app/login").expect("test URL should parse");
+    assert!(is_allowed_original_url_in(
+        macro_env::Environment::Develop,
+        &deployed_url
+    ));
+}
+
+#[test]
 fn development_machine_urls_are_https_mdns_names_without_credentials() {
     for accepted in [
         "https://some-machine.local:3000/app/login",
         "https://some-machine.local/app/",
         "https://Some-Machine.LOCAL:3000/app/login?next=1#section",
     ] {
-        let url = Url::parse(accepted).unwrap();
+        let url = Url::parse(accepted).expect("test URL should parse");
         assert!(is_development_machine_url(&url), "{url}");
     }
 
@@ -76,7 +101,7 @@ fn development_machine_urls_are_https_mdns_names_without_credentials() {
         "https://192.168.1.20:3000/app/login",
         "macro://some-machine.local/app/login",
     ] {
-        let url = Url::parse(rejected).unwrap();
+        let url = Url::parse(rejected).expect("test URL should parse");
         assert!(!is_development_machine_url(&url), "{url}");
     }
 }
