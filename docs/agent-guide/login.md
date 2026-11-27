@@ -188,7 +188,8 @@ login hint should not start identity checks or account services.
 
 ## Hosted-dev proxy SSO
 
-On an allowed OAuth origin such as `https://localhost:<port>`, Google/SSO
+On an allowed OAuth origin such as `https://localhost:<port>` or, against
+Develop, `https://<machine>.local:<port>`, Google/SSO
 sign-in navigates the browser to `/__macro_dev/gateway/auth/login/sso` with
 `is_mobile=true` to request the session-code handoff. The `original_url`
 remains the browser destination (including its query and hash). Returning
@@ -196,7 +197,7 @@ from the provider redeems the session code to establish cookies locally.
 A code redeems once: a second redemption, or a reload of a page still
 carrying `?token=`, answers 400.
 This browser flow must not open a native authentication session. Verify the
-redirect separately from provider completion; arbitrary development hostnames
+redirect separately from provider completion; other development hostnames
 are not on the hosted OAuth redirect allowlist.
 
 ## Native iOS 27

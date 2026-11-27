@@ -43,12 +43,41 @@ fn untrusted_original_urls_are_rejected() {
         "tauri://example.com/app/login",
         "http://127.0.0.1:3000/app/login",
         "javascript:alert('redirected')",
+        // Machine names are accepted in Develop only; tests run as Production.
+        "https://some-machine.local:3000/app/login",
     ] {
         let original_url = Url::parse(original_url).expect("test URL should parse");
         assert!(
             !is_allowed_original_url(&original_url),
             "{original_url} should be rejected"
         );
+    }
+}
+
+#[test]
+fn development_machine_urls_are_https_mdns_names_without_credentials() {
+    for accepted in [
+        "https://some-machine.local:3000/app/login",
+        "https://some-machine.local/app/",
+        "https://Some-Machine.LOCAL:3000/app/login?next=1#section",
+    ] {
+        let url = Url::parse(accepted).unwrap();
+        assert!(is_development_machine_url(&url), "{url}");
+    }
+
+    for rejected in [
+        "http://some-machine.local:3000/app/login",
+        "https://user:password@some-machine.local:3000/app/login",
+        "https://user@some-machine.local:3000/app/login",
+        "https://some-machine.local.example.com/app/login",
+        "https://some-machinelocal/app/login",
+        "https://local/app/login",
+        "https://example.com/app/login",
+        "https://192.168.1.20:3000/app/login",
+        "macro://some-machine.local/app/login",
+    ] {
+        let url = Url::parse(rejected).unwrap();
+        assert!(!is_development_machine_url(&url), "{url}");
     }
 }
 
